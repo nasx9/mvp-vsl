@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Plano de Guerra — Inside Sales">
+  <meta name="theme-color" content="#070a10">
+  <title>Plano de Guerra | Inside Sales</title>
+
+  <link rel="preconnect" href="https://scripts.converteai.net" crossorigin>
+  <link rel="dns-prefetch" href="https://scripts.converteai.net">
+
+  <!--
+    GOOGLE TAG MANAGER
+    Substitua GTM-XXXXXXX pelo ID real e remova os comentários.
+
+    <script>
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-XXXXXXX');
+    </script>
+  -->
+
+  <style>
+    :root {
+      --page-bg: #070a10;
+      --modal-bg: #ffffff;
+      --field-bg: #f7f8fa;
+      --text: #161a22;
+      --muted: #687181;
+      --border: #dfe3e8;
+      --focus: #21b76b;
+      --button: #25c879;
+      --button-hover: #1eae68;
+      --danger: #d92d20;
+      --success: #14804a;
+      --radius: 12px;
+      --shadow: 0 28px 90px rgba(0, 0, 0, 0.45);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--page-bg);
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(37, 200, 121, 0.08), transparent 34%),
+        var(--page-bg);
+      color: #fff;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    /* Página: somente o player VTurb. */
+    .video-page {
+      display: grid;
+      min-height: 100vh;
+      min-height: 100svh;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .video-container {
+      width: min(100%, 400px);
+      margin-inline: auto;
+    }
+
+    /* Modal aberto pela âncora #form. */
+    .form-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: grid;
+      padding: 18px;
+      place-items: center;
+      overflow-y: auto;
+      background: rgba(3, 6, 11, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    .form-modal.is-open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .form-modal__dialog {
+      position: relative;
+      width: min(100%, 560px);
+      max-height: calc(100svh - 36px);
+      overflow-y: auto;
+      padding: clamp(20px, 5vw, 32px);
+      border-radius: 18px;
+      background: var(--modal-bg);
+      box-shadow: var(--shadow);
+      transform: translateY(16px) scale(0.985);
+      transition: transform 180ms ease;
+      scrollbar-width: thin;
+    }
+
+    .form-modal.is-open .form-modal__dialog {
+      transform: translateY(0) scale(1);
+    }
+
+    .form-modal__close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+      display: grid;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      place-items: center;
+      color: #4b5565;
+      background: transparent;
+      cursor: pointer;
+      font-size: 28px;
+      line-height: 1;
+      transition: color 150ms ease, background 150ms ease;
+    }
+
+    .form-modal__close:hover,
+    .form-modal__close:focus-visible {
+      color: #111827;
+      background: #f0f2f5;
+      outline: none;
+    }
+
+    /* Mantém o padrão estrutural do formulário informado, sem depender do GreatPages. */
+    .c.e_formulario,
+    .c.e_formulario fieldset {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .c.e_formulario fieldset {
+      display: grid;
+      gap: 14px;
+      padding-top: 12px;
+    }
+
+    .gpc_campos {
+      width: 100%;
+    }
+
+    .gpc_campos-titulo.esconder,
+    .gpc_campos-texto,
+    .gpc_campos-hidden {
+      display: none;
+    }
+
+    .gpc_campos-campo {
+      position: relative;
+      width: 100%;
+    }
+
+    .gpc_campo {
+      display: block;
+      width: 100%;
+      min-height: 54px;
+      padding: 0 15px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      outline: none;
+      color: var(--text);
+      background: var(--field-bg);
+      transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+    }
+
+    select.gpc_campo {
+      padding-right: 42px;
+      cursor: pointer;
+    }
+
+    .gpc_campo::placeholder {
+      color: #798292;
+      opacity: 1;
+    }
+
+    .gpc_campo:hover {
+      border-color: #c8ced6;
+    }
+
+    .gpc_campo:focus {
+      border-color: var(--focus);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(33, 183, 107, 0.13);
+    }
+
+    .gpc_campo[aria-invalid="true"] {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.1);
+    }
+
+    .gpc_campos-erro {
+      display: none;
+      margin: 6px 2px 0;
+      color: var(--danger);
+      font-size: 0.78rem;
+      font-weight: 650;
+    }
+
+    .gpc_campos-error .gpc_campos-erro {
+      display: block;
+    }
+
+    .gpc_campos-campo-opcao {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .gpc_campos-campo-opcao input[type="checkbox"] {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      margin: 1px 0 0;
+      accent-color: var(--focus);
+      cursor: pointer;
+    }
+
+    .gpc_campos-campo-opcao label {
+      cursor: pointer;
+    }
+
+    .gpc_botao {
+      display: flex;
+      width: 100%;
+      min-height: 58px;
+      margin-top: 4px;
+      padding: 14px 18px;
+      border: 0;
+      border-radius: var(--radius);
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #05150d;
+      background: var(--button);
+      box-shadow: 0 14px 30px rgba(37, 200, 121, 0.22);
+      cursor: pointer;
+      font-weight: 900;
+      letter-spacing: 0.01em;
+      text-align: center;
+      transition: background 150ms ease, transform 150ms ease, opacity 150ms ease;
+    }
+
+    .gpc_botao:hover:not(:disabled) {
+      background: var(--button-hover);
+      transform: translateY(-1px);
+    }
+
+    .gpc_botao:focus-visible {
+      outline: 3px solid rgba(33, 183, 107, 0.28);
+      outline-offset: 3px;
+    }
+
+    .gpc_botao:disabled {
+      cursor: wait;
+      opacity: 0.68;
+    }
+
+    .form-status {
+      display: none;
+      margin: 0;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .form-status.is-error {
+      display: block;
+      color: #9f1f17;
+      background: #fff0ef;
+    }
+
+    .form-status.is-success {
+      display: block;
+      color: var(--success);
+      background: #eaf8f1;
+    }
+
+    .spinner {
+      display: none;
+      width: 19px;
+      height: 19px;
+      border: 2px solid rgba(5, 21, 13, 0.28);
+      border-top-color: #05150d;
+      border-radius: 50%;
+      animation: spin 650ms linear infinite;
+    }
+
+    .gpc_botao.is-loading .spinner {
+      display: block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .honeypot {
+      position: absolute !important;
+      left: -9999px !important;
+      width: 1px !important;
+      height: 1px !important;
+      overflow: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    @media (max-width: 600px) {
+      .form-modal {
+        padding: 0;
+        place-items: end center;
+      }
+
+      .form-modal__dialog {
+        width: 100%;
+        max-height: 94svh;
+        padding: 26px 18px calc(20px + env(safe-area-inset-bottom));
+        border-radius: 20px 20px 0 0;
+        transform: translateY(100%);
+      }
+
+      .form-modal.is-open .form-modal__dialog {
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!--
+    GOOGLE TAG MANAGER — NOSCRIPT
+    Descomente e substitua o ID se for usar GTM.
+
+    <noscript>
+      <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX"
+        height="0" width="0" style="display:none;visibility:hidden"></iframe>
+    </noscript>
+  -->
+
+  <main class="video-page">
+    <div class="video-container">
+      <!--
+        O botão é criado pelo próprio VTurb.
+        No painel do VTurb, configure o link do botão APENAS como:
+        #form
+      -->
+      <vturb-smartplayer
+        id="vid-6a5012373c43e1aa78fc1dae"
+        style="display: block; margin: 0 auto; width: 100%; max-width: 400px;"
+      >
+        <div
+          class="vturb-player-placeholder"
+          style="position: relative; width: 100%; padding: 177.77777777777777% 0 0; z-index: 0; background-color: black;"
+        ></div>
+      </vturb-smartplayer>
+    </div>
+  </main>
+
+  <!--
+    O modal abre quando a URL recebe #form.
+    Não há CTA adicional no HTML: o acionamento vem exclusivamente do VTurb.
+  -->
+  <div
+    id="form"
+    class="form-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Formulário de aplicação"
+    aria-hidden="true"
+  >
+    <div class="form-modal__dialog" role="document">
+      <button
+        id="modal-close"
+        class="form-modal__close"
+        type="button"
+        aria-label="Fechar formulário"
+      >&times;</button>
+
+      <form id="lead-form" class="c e_formulario" novalidate>
+        <fieldset>
+          <div class="gpc_campos gpc_campos-input gpc_campos-100">
+            <div class="gpc_campos-titulo esconder">
+              <label for="nome"><span><em>*</em>Nome</span></label>
+            </div>
+            <div class="gpc_campos-campo">
+              <input
+                id="nome"
+                name="nome"
+                type="text"
+                placeholder="* Nome"
+                class="gpc_campo obrigatorio"
+                autocomplete="name"
+                minlength="3"
+                required
+              >
+              <div class="gpc_campos-erro" data-error-for="nome">Campo obrigatório.</div>
+            </div>
+            <div class="gpc_campos-texto"></div>
+          </div>
+
+          <div class="gpc_campos gpc_campos-input gpc_campos-100">
+            <div class="gpc_campos-titulo esconder">
+              <label for="email"><span><em>*</em>E-mail</span></label>
+            </div>
+            <div class="gpc_campos-campo">
+              <input
+                id="email"
+                name="e-mail"
+                type="email"
+                placeholder="* E-mail"
+                class="gpc_campo email obrigatorio"
+                autocomplete="email"
+                required
+              >
+              <div class="gpc_campos-erro" data-error-for="email">Informe um e-mail válido.</div>
+            </div>
+            <div class="gpc_campos-texto"></div>
+          </div>
+
+          <div class="gpc_campos gpc_campos-input gpc_campos-100">
+            <div class="gpc_campos-titulo esconder">
+              <label for="whatsapp"><span><em>*</em>DDD + WhatsApp</span></label>
+            </div>
+            <div class="gpc_campos-campo">
+              <input
+                id="whatsapp"
+                name="ddd-whatsapp"
+                type="tel"
+                placeholder="* DDD + WhatsApp"
+                class="gpc_campo telefone obrigatorio"
+                autocomplete="tel"
+                inputmode="tel"
+                minlength="14"
+                required
+              >
+              <div class="gpc_campos-erro" data-error-for="whatsapp">Informe um WhatsApp válido.</div>
+            </div>
+            <div class="gpc_campos-texto"></div>
+          </div>
+
+          <div class="gpc_campos gpc_campos-select gpc_campos-100">
+            <div class="gpc_campos-titulo esconder">
+              <label for="dono-negocio"><span><em>*</em>Você é dono do seu negócio?</span></label>
+            </div>
+            <div class="gpc_campos-campo">
+              <select
+                id="dono-negocio"
+                name="voc-dono-do-seu-negcio"
+                class="gpc_campo obrigatorio"
+                required
+              >
+                <option value="" selected disabled>* Você é dono do seu negócio?</option>
+                <option value="Sim">Sim</option>
+                <option value="Não">Não</option>
+              </select>
+              <div class="gpc_campos-erro" data-error-for="dono-negocio">Campo obrigatório.</div>
+            </div>
+            <div class="gpc_campos-texto"></div>
+          </div>
+
+          <div class="gpc_campos gpc_campos-select gpc_campos-100">
+            <div class="gpc_campos-titulo esconder">
+              <label for="segmento"><span><em>*</em>Segmento da Empresa</span></label>
+            </div>
+            <div class="gpc_campos-campo">
+              <select
+                id="segmento"
+                name="segmento-da-empresa"
+                class="gpc_campo obrigatorio"
+                required
+              >
+                <option value="" selected disabled>* Segmento da Empresa</option>
+                <option value="Saúde, Estética e Bem-estar">Saúde, Estética e Bem-estar</option>
+                <option value="Educação e Infoprodutos">Educação e Infoprodutos</option>
+                <option value="Alimentação">Alimentação</option>
+                <option value="Varejo e E-commerce">Varejo e E-commerce</option>
+                <option value="Serviços Profissionais">Serviços Profissionais</option>
+                <option value="Construção e Imobiliário">Construção e Imobiliário</option>
+                <option value="Automotivo">Automotivo</option>
+                <option value="Tecnologia">Tecnologia</option>
+                <option value="Indústria">Indústria</option>
+                <option value="Outro">Outro</option>
+              </select>
+              <div class="gpc_campos-erro" data-error-for="segmento">Campo obrigatório.</div>
+            </div>
+            <div class="gpc_campos-texto"></div>
+          </div>
+
+          <div class="gpc_campos gpc_campos-select gpc_campos-100">
+            <div class="gpc_campos-titulo esconder">
+              <label for="faturamento"><span><em>*</em>Qual o faturamento mensal da sua empresa?</span></label>
+            </div>
+            <div class="gpc_campos-campo">
+              <select
+                id="faturamento"
+                name="qual-o-faturamento-mensal-da-sua-empresa"
+                class="gpc_campo obrigatorio"
+                required
+              >
+                <option value="" selected disabled>* Qual o faturamento mensal da sua empresa?</option>
+                <option value="0 a 10 mil">0 a 10 mil</option>
+                <option value="11 mil a 20 mil">11 mil a 20 mil</option>
+                <option value="21 mil a 50 mil">21 mil a 50 mil</option>
+                <option value="51 mil a 100 mil">51 mil a 100 mil</option>
+                <option value="101 mil a 500 mil">101 mil a 500 mil</option>
+                <option value="Acima de 500 mil">Acima de 500 mil</option>
+              </select>
+              <div class="gpc_campos-erro" data-error-for="faturamento">Campo obrigatório.</div>
+            </div>
+            <div class="gpc_campos-texto"></div>
+          </div>
+
+          <div class="gpc_campos gpc_campos-consentimento_lgpd gpc_campos-100">
+            <div class="gpc_campos-titulo esconder">
+              <label for="politicas-privacidade"><span><em>*</em>Políticas de privacidade</span></label>
+            </div>
+            <div class="gpc_campos-campo">
+              <div class="gpc_campos-campo-opcao obrigatorio">
+                <input
+                  type="checkbox"
+                  id="politicas-privacidade"
+                  name="polticas-de-privacidade"
+                  value="Concordo em fornecer meus dados para receber conteúdos e ofertas por e-mail ou outros meios."
+                  required
+                >
+                <label for="politicas-privacidade">
+                  Concordo em fornecer meus dados para receber conteúdos e ofertas por e-mail ou outros meios.
+                </label>
+              </div>
+              <div class="gpc_campos-erro" data-error-for="politicas-privacidade">É necessário aceitar para continuar.</div>
+            </div>
+            <div class="gpc_campos-texto"></div>
+          </div>
+
+          <!-- Campos de rastreamento preenchidos automaticamente pela URL. -->
+          <input id="ad_id" name="ad_id" type="hidden" value="">
+          <input id="adset_id" name="adset_id" type="hidden" value="">
+          <input id="campaign_id" name="campaign_id" type="hidden" value="">
+          <input id="utm_source" name="utm_source" type="hidden" value="">
+          <input id="utm_medium" name="utm_medium" type="hidden" value="">
+          <input id="utm_campaign" name="utm_campaign" type="hidden" value="">
+          <input id="utm_content" name="utm_content" type="hidden" value="">
+          <input id="utm_term" name="utm_term" type="hidden" value="">
+          <input id="fbclid" name="fbclid" type="hidden" value="">
+          <input id="gclid" name="gclid" type="hidden" value="">
+          <input id="ttclid" name="ttclid" type="hidden" value="">
+
+          <div class="honeypot" aria-hidden="true">
+            <label for="website">Não preencha</label>
+            <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+          </div>
+
+          <p id="form-status" class="form-status" role="status" aria-live="polite"></p>
+
+          <button id="submit-button" type="submit" class="gpc_botao borda_igual e_formulario">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="button-label">QUERO FALAR COM UM ESPECIALISTA</span>
+          </button>
+        </fieldset>
+      </form>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var s = document.createElement("script");
+    s.src = "https://scripts.converteai.net/1538645d-652c-4402-953a-89f3074a447f/players/6a5012373c43e1aa78fc1dae/v4/player.js";
+    s.async = true;
+    document.head.appendChild(s);
+  </script>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const CONFIG = {
+        // Substitua pela URL real do webhook do n8n.
+        webhookUrl: 'https://SEU-DOMINIO-N8N.com/webhook/vsl-inside-sales',
+        requestTimeoutMs: 15000,
+        videoId: '6a5012373c43e1aa78fc1dae',
+        funnel: 'vsl-inside-sales',
+        pageName: 'inside-sale'
+      };
+
+      const TRACKING_FIELDS = [
+        'ad_id',
+        'adset_id',
+        'campaign_id',
+        'utm_source',
+        'utm_medium',
+        'utm_campaign',
+        'utm_content',
+        'utm_term',
+        'fbclid',
+        'gclid',
+        'ttclid'
+      ];
+
+      const modal = document.getElementById('form');
+      const dialog = modal.querySelector('.form-modal__dialog');
+      const closeButton = document.getElementById('modal-close');
+      const leadForm = document.getElementById('lead-form');
+      const submitButton = document.getElementById('submit-button');
+      const formStatus = document.getElementById('form-status');
+      const phoneInput = document.getElementById('whatsapp');
+      const firstInput = document.getElementById('nome');
+
+      let lastFocusedElement = null;
+      let formStartedTracked = false;
+
+      window.dataLayer = window.dataLayer || [];
+
+      function pushEvent(event, data = {}) {
+        window.dataLayer.push({
+          event,
+          funnel: CONFIG.funnel,
+          page_name: CONFIG.pageName,
+          video_id: CONFIG.videoId,
+          ...data
+        });
+      }
+
+      function generateEventId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+          return window.crypto.randomUUID();
+        }
+
+        return `evt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      }
+
+      function maskPhone(value) {
+        const digits = String(value || '').replace(/\D/g, '').slice(0, 11);
+
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+        if (digits.length <= 10) {
+          return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+        }
+
+        return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+      }
+
+      function normalizePhoneBR(value) {
+        const digits = String(value || '').replace(/\D/g, '');
+        return digits.startsWith('55') ? digits : `55${digits}`;
+      }
+
+      function setStatus(message = '', type = '') {
+        formStatus.textContent = message;
+        formStatus.className = 'form-status';
+
+        if (type) {
+          formStatus.classList.add(`is-${type}`);
+        }
+      }
+
+      function setLoading(isLoading) {
+        submitButton.disabled = isLoading;
+        submitButton.classList.toggle('is-loading', isLoading);
+        submitButton.setAttribute('aria-busy', String(isLoading));
+      }
+
+      function getFocusableElements() {
+        return Array.from(
+          dialog.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((element) => element.offsetParent !== null);
+      }
+
+      function openModal(source = 'hash') {
+        if (modal.classList.contains('is-open')) return;
+
+        lastFocusedElement = document.activeElement;
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+
+        pushEvent('vsl_form_opened', { open_source: source });
+
+        window.setTimeout(() => firstInput.focus(), 180);
+      }
+
+      function closeModal({ removeHash = true } = {}) {
+        if (!modal.classList.contains('is-open')) return;
+
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+
+        if (removeHash && window.location.hash === '#form') {
+          history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+        }
+
+        if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+          lastFocusedElement.focus();
+        }
+      }
+
+      function syncModalWithHash() {
+        if (window.location.hash === '#form') {
+          openModal('url_hash');
+        } else {
+          closeModal({ removeHash: false });
+        }
+      }
+
+      function populateTrackingFields() {
+        const params = new URLSearchParams(window.location.search);
+
+        TRACKING_FIELDS.forEach((fieldName) => {
+          const field = document.getElementById(fieldName);
+          if (!field) return;
+
+          const currentValue = params.get(fieldName);
+          const storedValue = sessionStorage.getItem(`tracking_${fieldName}`);
+          const value = currentValue || storedValue || '';
+
+          if (currentValue) {
+            sessionStorage.setItem(`tracking_${fieldName}`, currentValue);
+          }
+
+          field.value = value;
+        });
+      }
+
+      function clearValidation() {
+        leadForm.querySelectorAll('.gpc_campos-error').forEach((wrapper) => {
+          wrapper.classList.remove('gpc_campos-error');
+        });
+
+        leadForm.querySelectorAll('[aria-invalid="true"]').forEach((field) => {
+          field.removeAttribute('aria-invalid');
+        });
+      }
+
+      function showValidationErrors() {
+        clearValidation();
+
+        const invalidFields = Array.from(leadForm.querySelectorAll(':invalid'));
+
+        invalidFields.forEach((field) => {
+          field.setAttribute('aria-invalid', 'true');
+          field.closest('.gpc_campos')?.classList.add('gpc_campos-error');
+        });
+
+        invalidFields[0]?.focus();
+      }
+
+      function buildPayload(formData, eventId) {
+        const tracking = TRACKING_FIELDS.reduce((result, fieldName) => {
+          result[fieldName] = String(formData.get(fieldName) || '');
+          return result;
+        }, {});
+
+        return {
+          event: 'vsl_lead_generated',
+          event_id: eventId,
+          event_time: Math.floor(Date.now() / 1000),
+
+          lead: {
+            name: String(formData.get('nome') || '').trim(),
+            email: String(formData.get('e-mail') || '').trim().toLowerCase(),
+            phone: normalizePhoneBR(formData.get('ddd-whatsapp')),
+            is_business_owner: String(formData.get('voc-dono-do-seu-negcio') || ''),
+            company_segment: String(formData.get('segmento-da-empresa') || ''),
+            monthly_revenue: String(formData.get('qual-o-faturamento-mensal-da-sua-empresa') || ''),
+            privacy_consent: formData.has('polticas-de-privacidade')
+          },
+
+          tracking: {
+            ...tracking,
+            landing_page: window.location.href.split('#')[0],
+            page_path: window.location.pathname,
+            referrer: document.referrer || null,
+            video_id: CONFIG.videoId,
+            funnel: CONFIG.funnel
+          },
+
+          metadata: {
+            submitted_at: new Date().toISOString(),
+            language: navigator.language || 'pt-BR',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+            user_agent: navigator.userAgent,
+            screen: `${window.screen.width}x${window.screen.height}`
+          }
+        };
+      }
+
+      async function postWithTimeout(url, payload, timeoutMs) {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+
+          if (!response.ok) {
+            throw new Error(`Webhook respondeu com HTTP ${response.status}`);
+          }
+
+          return response;
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        populateTrackingFields();
+        syncModalWithHash();
+      });
+
+      window.addEventListener('hashchange', syncModalWithHash);
+
+      closeButton.addEventListener('click', () => closeModal());
+
+      modal.addEventListener('mousedown', (event) => {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (!modal.classList.contains('is-open')) return;
+
+        if (event.key === 'Escape') {
+          closeModal();
+          return;
+        }
+
+        if (event.key !== 'Tab') return;
+
+        const focusable = getFocusableElements();
+        if (!focusable.length) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      });
+
+      phoneInput.addEventListener('input', (event) => {
+        event.target.value = maskPhone(event.target.value);
+      });
+
+      leadForm.addEventListener('input', (event) => {
+        const wrapper = event.target.closest('.gpc_campos');
+        wrapper?.classList.remove('gpc_campos-error');
+        event.target.removeAttribute('aria-invalid');
+
+        if (!formStartedTracked) {
+          pushEvent('vsl_form_started');
+          formStartedTracked = true;
+        }
+      });
+
+      leadForm.addEventListener('change', (event) => {
+        const wrapper = event.target.closest('.gpc_campos');
+        wrapper?.classList.remove('gpc_campos-error');
+        event.target.removeAttribute('aria-invalid');
+      });
+
+      leadForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        setStatus();
+        clearValidation();
+
+        if (!leadForm.checkValidity()) {
+          showValidationErrors();
+          pushEvent('vsl_form_validation_error');
+          return;
+        }
+
+        const formData = new FormData(leadForm);
+
+        if (String(formData.get('website') || '').trim()) {
+          setStatus('Enviado com sucesso!', 'success');
+          return;
+        }
+
+        const eventId = generateEventId();
+        const payload = buildPayload(formData, eventId);
+
+        setLoading(true);
+        pushEvent('vsl_form_submit', { event_id: eventId });
+
+        try {
+          await postWithTimeout(CONFIG.webhookUrl, payload, CONFIG.requestTimeoutMs);
+
+          pushEvent('generate_lead', {
+            event_id: eventId,
+            owner_answer: payload.lead.is_business_owner,
+            revenue_range: payload.lead.monthly_revenue,
+            company_segment: payload.lead.company_segment
+          });
+
+          if (typeof window.fbq === 'function') {
+            window.fbq('track', 'Lead', {
+              content_name: CONFIG.funnel,
+              revenue_range: payload.lead.monthly_revenue
+            }, {
+              eventID: eventId
+            });
+          }
+
+          leadForm.reset();
+          populateTrackingFields();
+          setStatus('Enviado com sucesso!', 'success');
+        } catch (error) {
+          console.error('Erro ao enviar formulário:', error);
+
+          const message = error.name === 'AbortError'
+            ? 'A solicitação demorou mais que o esperado. Tente novamente.'
+            : 'Não foi possível enviar agora. Tente novamente.';
+
+          setStatus(message, 'error');
+          pushEvent('vsl_form_submit_error', {
+            error_type: error.name || 'unknown'
+          });
+        } finally {
+          setLoading(false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

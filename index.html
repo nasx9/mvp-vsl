@@ -794,7 +794,14 @@
         pageName: 'aula-metodo-flywheel',
         pageTitle: 'Aula do Método Flywheel',
         whatsappUrl: 'https://wa.me/5561992194586',
-        redirectDelaySeconds: 5
+        redirectDelaySeconds: 5,
+        // Identificação da ferramenta de entrada (padrão de forms — mvp-quiz).
+        entryTool: 'Aula do Método Flywheel',
+        entryTag: 'FERR_VSL_FLYWHEEL',
+        // Redirect para página de obrigado (ICP/S_ICP) desabilitado. A flag
+        // window.__redirect_done sinaliza ao GTM para NÃO redirecionar; o fluxo
+        // atual (painel de sucesso + WhatsApp) é preservado.
+        redirectToThankYou: false
       };
 
       const TRACKING_FIELDS = [
@@ -840,6 +847,31 @@
           video_id: CONFIG.videoId,
           ...data
         });
+      }
+
+      function getCookie(name) {
+        return document.cookie
+          .split('; ')
+          .find((row) => row.startsWith(`${name}=`))
+          ?.split('=')[1] || '';
+      }
+
+      // Faixas de faturamento que qualificam o lead. Espelha EXATAMENTE a regra da
+      // tag "Router Lead Classification" do GTM: dono = "Sim" E faturamento >= 21 mil.
+      const QUALIFIED_REVENUE = ['21 mil a 50 mil', '51 mil a 100 mil', '101 mil a 500 mil', 'Acima de 500 mil'];
+
+      // Classificação ICP apenas para enriquecer o payload do webhook (n8n). A
+      // classificação que dispara tags/conversões é feita pelo próprio container
+      // GTM, que lê os campos do formulário diretamente no DOM.
+      function computeLeadQualification(lead) {
+        const isOwner = lead.is_business_owner === 'Sim';
+        const qualified = isOwner && QUALIFIED_REVENUE.includes(lead.monthly_revenue);
+
+        return {
+          qualified,
+          leadType: qualified ? 'qualified' : 'unqualified',
+          icpStatus: qualified ? 'ICP' : 'S_ICP'
+        };
       }
 
       function generateEventId() {
@@ -1015,6 +1047,18 @@
           return result;
         }, {});
 
+        const lead = {
+          name: String(formData.get('nome') || '').trim(),
+          email: String(formData.get('e-mail') || '').trim().toLowerCase(),
+          phone: normalizePhoneBR(formData.get('ddd-whatsapp')),
+          is_business_owner: String(formData.get('voc-dono-do-seu-negcio') || ''),
+          company_segment: String(formData.get('segmento-da-empresa') || ''),
+          monthly_revenue: String(formData.get('qual-o-faturamento-mensal-da-sua-empresa') || ''),
+          privacy_consent: formData.has('polticas-de-privacidade')
+        };
+
+        const qualification = computeLeadQualification(lead);
+
         return {
           event: 'vsl_lead_generated',
           page_title: CONFIG.pageTitle,
@@ -1022,13 +1066,11 @@
           event_time: Math.floor(Date.now() / 1000),
 
           lead: {
-            name: String(formData.get('nome') || '').trim(),
-            email: String(formData.get('e-mail') || '').trim().toLowerCase(),
-            phone: normalizePhoneBR(formData.get('ddd-whatsapp')),
-            is_business_owner: String(formData.get('voc-dono-do-seu-negcio') || ''),
-            company_segment: String(formData.get('segmento-da-empresa') || ''),
-            monthly_revenue: String(formData.get('qual-o-faturamento-mensal-da-sua-empresa') || ''),
-            privacy_consent: formData.has('polticas-de-privacidade')
+            ...lead,
+            entry_tool: CONFIG.entryTool,
+            entry_tag: CONFIG.entryTag,
+            lead_type: qualification.leadType,
+            icp_status: qualification.icpStatus
           },
 
           tracking: {
@@ -1036,6 +1078,8 @@
             landing_page: window.location.href.split('#')[0],
             page_path: window.location.pathname,
             referrer: document.referrer || null,
+            fbc: getCookie('_fbc'),
+            fbp: getCookie('_fbp'),
             video_id: CONFIG.videoId,
             funnel: CONFIG.funnel
           },
@@ -1170,30 +1214,27 @@
         const eventId = generateEventId();
         const payload = buildPayload(formData, eventId);
 
+        // Desabilita o redirect do GTM para a página de obrigado (ICP/S_ICP).
+        // As tags "Redirect Qualified/Unqualified" fazem `if (window.__redirect_done) return`,
+        // então setar a flag antes delas rodarem cancela o redirect. Mantemos o
+        // fluxo próprio do VSL (painel de sucesso + WhatsApp).
+        if (!CONFIG.redirectToThankYou) {
+          window.__redirect_done = true;
+        }
+
         setLoading(true);
         pushEvent('vsl_form_submit', { event_id: eventId });
 
         try {
           await postWithTimeout(CONFIG.webhookUrl, payload, CONFIG.requestTimeoutMs);
 
-          pushEvent('generate_lead', {
-            event_id: eventId,
-            owner_answer: payload.lead.is_business_owner,
-            revenue_range: payload.lead.monthly_revenue,
-            company_segment: payload.lead.company_segment
-          });
+          // Evento do padrão de forms. A tag "Router Lead Classification" do GTM lê
+          // os campos do formulário no DOM, classifica (ICP/S_ICP) e dispara as
+          // conversões (Meta Lead + GA4 generate_lead). Por isso NÃO resetamos o
+          // formulário aqui (o GTM precisa ler os valores) e NÃO disparamos
+          // fbq/GA pela página — o GTM é dono das conversões (evita contagem dupla).
+          pushEvent('form_submit', { event_id: eventId });
 
-          if (typeof window.fbq === 'function') {
-            window.fbq('track', 'Lead', {
-              content_name: CONFIG.funnel,
-              revenue_range: payload.lead.monthly_revenue
-            }, {
-              eventID: eventId
-            });
-          }
-
-          leadForm.reset();
-          populateTrackingFields();
           showSuccess();
         } catch (error) {
           console.error('Erro ao enviar formulário:', error);

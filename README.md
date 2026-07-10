@@ -167,24 +167,46 @@ O clique manual no botão cancela a contagem para evitar navegação duplicada.
 
 ## Eventos de rastreamento
 
-Enviados a `window.dataLayer` quando disponível:
+Eventos de funil do VSL, enviados a `window.dataLayer` (uso analítico próprio; o
+GTM atual não possui triggers para eles):
 
 ```text
 vsl_pitch_reached · vsl_cta_revealed · vsl_cta_clicked · vsl_form_opened
 vsl_form_started · vsl_form_validation_error · vsl_form_submit
-generate_lead · vsl_form_submit_error
+vsl_form_submit_error
 ```
 
-O evento de conversão `generate_lead` só é disparado após o webhook responder
-com sucesso. Se `window.fbq` estiver disponível, o evento `Lead` também é enviado
-ao Meta Pixel com o mesmo `event_id` (deduplicação futura com a Conversions API).
+**Padrão de forms (conversão):** após o sucesso do webhook, a página empurra o
+evento `form_submit`. A partir daí, quem classifica e converte é o **GTM** (ver
+abaixo). A página **não** dispara mais `fbq('track','Lead')` nem `generate_lead`
+diretamente, para evitar contagem dupla.
 
 ## Google Tag Manager
 
 GTM ativo com o contêiner `GTM-5D9F96N7` (snippet no `<head>` e `noscript` no
-início do `<body>`). Os eventos de conversão são publicados em `window.dataLayer`
-(ver "Eventos de rastreamento"). Para trocar o contêiner, atualize o ID nos dois
-blocos do `index.html`.
+início do `<body>`). O contrato completo do container está em
+`docs/gtm/README.md`. Resumo:
+
+- A página empurra `form_submit` no sucesso do envio (formulário ainda
+  preenchido no DOM).
+- A tag **Router Lead Classification** lê os campos `voc-dono-do-seu-negcio` e
+  `qual-o-faturamento-mensal-da-sua-empresa` no DOM, classifica
+  (`qualified` = dono "Sim" **e** faturamento ≥ 21 mil, senão `unqualified`) e
+  empurra `form_submit_qualified` / `form_submit_unqualified`.
+- Essas tags disparam **Meta Lead** (+`Lead_Qualified`/`Lead_Unqualified`),
+  **GA4 `generate_lead`** e a conversão do Google Ads. O GTM é o dono das
+  conversões.
+
+### Redirect para página de obrigado (desabilitado)
+
+O container tem as tags `Redirect Qualified` / `Redirect Unqualified` que
+redirecionam o lead para uma página de obrigado. Elas checam
+`if (window.__redirect_done) return`. A página seta `window.__redirect_done =
+true` no submit (controlado por `CONFIG.redirectToThankYou`, padrão `false`),
+**desabilitando esse redirect** para ICP e S_ICP e preservando o fluxo próprio
+do VSL (painel de sucesso + WhatsApp). Para reativar o redirect do GTM, defina
+`redirectToThankYou: true` no `CONFIG` (e desative o redirecionamento ao
+WhatsApp para não conflitar).
 
 ## Docker
 

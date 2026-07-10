@@ -275,3 +275,45 @@ Uma tarefa só está concluída quando:
 - o contrato com o n8n não foi quebrado;
 - o README foi atualizado quando houver mudança operacional;
 - a página continua adequada para deploy via Docker/Coolify.
+
+## Padrão de desenvolvimento
+
+Este projeto segue o framework **dev-stack** (`github.com/nasx9/dev-stack`) e o
+vault curado **ai-context** (`github.com/nasx9/ai-context`).
+
+- Maturidade: **Nível 1 — Simples** (landing page estática, sem banco crítico).
+  Build automatizado no CI e deploy manual controlado no Coolify.
+- Ambiente: **Docker-first, mise-for-speed**. O Docker é a fonte de verdade do
+  runtime; o `.mise.toml` só padroniza ferramentas locais. Em divergência,
+  Docker vence.
+- Documentação em português do Brasil, tom técnico e direto.
+- Não registrar secrets, tokens, senhas ou dados sensíveis no repositório.
+
+### Estrutura de documentação
+
+```text
+docs/
+  00-visao-geral.md                     Contexto, objetivo e escopo
+  04-arquitetura-geral.md               Componentes e fluxo técnico
+  05-ambiente-de-desenvolvimento.md     Runtimes, Docker e execução local
+  deploy/coolify.md                     Passo a passo de deploy no Coolify
+  deploy/smoke-tests.md                 Validação pós-deploy
+  decisoes-tecnicas/adr-0001-*.md       ADR da stack estática + Nginx
+  checklists/checklist-pre-deploy.md    Validação antes do deploy
+  checklists/checklist-pos-deploy.md    Validação após o deploy
+```
+
+### Fluxo para mudanças relevantes
+
+1. Ler `docs/00-visao-geral.md` e `AGENTS.md`.
+2. Fazer plano curto antes de alterar arquivos.
+3. Executar uma mudança por vez, pequena e verificável.
+4. Validar com `scripts/smoke.sh` (ou `mise run smoke`) e teste local por HTTP.
+5. Atualizar documentação afetada e registrar ADR em decisão técnica relevante.
+6. Informar arquivos alterados, validações executadas e riscos restantes.
+
+### Entrega esperada
+
+- Arquivos criados ou alterados.
+- Validações executadas (build, smoke tests, teste manual do fluxo).
+- Riscos restantes e próximo passo recomendado.

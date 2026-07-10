@@ -94,7 +94,14 @@
       margin-inline: auto;
     }
 
-    /* Modal aberto pela âncora #form. */
+    /*
+      O VTurb controla diretamente este elemento pelo ID "form".
+      O display:none é obrigatório para a função “Mostrar conteúdo oculto”.
+    */
+    .vturb-hidden-content {
+      display: none;
+    }
+
     .form-modal {
       position: fixed;
       inset: 0;
@@ -398,9 +405,8 @@
   <main class="video-page">
     <div class="video-container">
       <!--
-        O botão é criado pelo próprio VTurb.
-        No painel do VTurb, configure o link do botão APENAS como:
-        #form
+        No VTurb, use “Mostrar conteúdo oculto”, selecione ID
+        e informe somente: form
       -->
       <vturb-smartplayer
         id="vid-6a5012373c43e1aa78fc1dae"
@@ -415,18 +421,18 @@
   </main>
 
   <!--
-    O modal abre quando a URL recebe #form.
-    Não há CTA adicional no HTML: o acionamento vem exclusivamente do VTurb.
+    Conteúdo controlado nativamente pelo VTurb.
+    Em “Mostrar conteúdo oculto”, escolha ID e informe: form
   -->
-  <div
-    id="form"
-    class="form-modal"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Formulário de aplicação"
-    aria-hidden="true"
-  >
-    <div class="form-modal__dialog" role="document">
+  <div id="form" class="vturb-hidden-content" style="display: none;">
+    <div
+      class="form-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Formulário de aplicação"
+      aria-hidden="true"
+    >
+      <div class="form-modal__dialog" role="document">
       <button
         id="modal-close"
         class="form-modal__close"
@@ -602,7 +608,6 @@
           <input id="fbclid" name="fbclid" type="hidden" value="">
           <input id="gclid" name="gclid" type="hidden" value="">
           <input id="ttclid" name="ttclid" type="hidden" value="">
-          <input id="src" name="src" type="hidden" value="">
 
           <div class="honeypot" aria-hidden="true">
             <label for="website">Não preencha</label>
@@ -617,6 +622,7 @@
           </button>
         </fieldset>
       </form>
+      </div>
     </div>
   </div>
 
@@ -651,11 +657,11 @@
         'utm_term',
         'fbclid',
         'gclid',
-        'ttclid',
-        'src'
+        'ttclid'
       ];
 
-      const modal = document.getElementById('form');
+      const hiddenContent = document.getElementById('form');
+      const modal = hiddenContent.querySelector('.form-modal');
       const dialog = modal.querySelector('.form-modal__dialog');
       const closeButton = document.getElementById('modal-close');
       const leadForm = document.getElementById('lead-form');
@@ -727,7 +733,11 @@
         ).filter((element) => element.offsetParent !== null);
       }
 
-      function openModal(source = 'hash') {
+      function isFormVisible() {
+        return window.getComputedStyle(hiddenContent).display !== 'none';
+      }
+
+      function openModal(source = 'vturb_hidden_content') {
         if (modal.classList.contains('is-open')) return;
 
         lastFocusedElement = document.activeElement;
@@ -735,99 +745,42 @@
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('modal-open');
 
+        pushEvent('vsl_pitch_reached', { open_source: source });
         pushEvent('vsl_form_opened', { open_source: source });
 
         window.setTimeout(() => firstInput.focus(), 180);
       }
 
-      function closeModal({ removeHash = true } = {}) {
-        if (!modal.classList.contains('is-open')) return;
-
+      function closeModal() {
+        hiddenContent.style.display = 'none';
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('modal-open');
-
-        if (removeHash && window.location.hash.startsWith('#form')) {
-          history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-        }
 
         if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
           lastFocusedElement.focus();
         }
       }
 
-      function syncModalWithHash() {
-        if (window.location.hash.startsWith('#form')) {
-          openModal('url_hash');
+      function syncModalWithVturbVisibility() {
+        if (isFormVisible()) {
+          openModal('vturb_hidden_content');
         } else {
-          closeModal({ removeHash: false });
+          modal.classList.remove('is-open');
+          modal.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('modal-open');
         }
       }
 
-      function captureVturbTracking(href) {
-        if (!href) return '';
+      function observeVturbContentReveal() {
+        const observer = new MutationObserver(syncModalWithVturbVisibility);
 
-        try {
-          const url = new URL(href, window.location.href);
-          const src = url.searchParams.get('src') || '';
-
-          if (src) {
-            sessionStorage.setItem('tracking_src', src);
-            const srcField = document.getElementById('src');
-            if (srcField) srcField.value = src;
-          }
-
-          return src;
-        } catch (error) {
-          console.warn('Não foi possível ler o rastreamento do CTA do VTurb.', error);
-          return '';
-        }
-      }
-
-      function normalizeVturbCta(anchor) {
-        if (!(anchor instanceof HTMLAnchorElement)) return;
-
-        const href = anchor.getAttribute('href') || '';
-        if (!href.includes('#form')) return;
-
-        if (!anchor.dataset.originalVturbHref) {
-          anchor.dataset.originalVturbHref = href;
-        }
-
-        captureVturbTracking(anchor.dataset.originalVturbHref);
-
-        // O VTurb resolve #form para uma URL absoluta e acrescenta ?src=... .
-        // Mantemos o src no formulário, mas fazemos o link navegar somente para o ID.
-        anchor.setAttribute('href', '#form');
-        anchor.setAttribute('target', '_self');
-        anchor.dataset.modalCta = 'true';
-      }
-
-      function normalizeInjectedVturbCtas(root = document) {
-        if (root instanceof HTMLAnchorElement) {
-          normalizeVturbCta(root);
-        }
-
-        root.querySelectorAll?.('a[href*="#form"], a[data-modal-cta="true"]')
-          .forEach(normalizeVturbCta);
-      }
-
-      function observeVturbCtaInjection() {
-        normalizeInjectedVturbCtas(document);
-
-        const observer = new MutationObserver((mutations) => {
-          mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType !== Node.ELEMENT_NODE) return;
-              normalizeInjectedVturbCtas(node);
-            });
-          });
+        observer.observe(hiddenContent, {
+          attributes: true,
+          attributeFilter: ['style', 'class', 'hidden']
         });
 
-        observer.observe(document.documentElement, {
-          childList: true,
-          subtree: true
-        });
+        syncModalWithVturbVisibility();
       }
 
       function populateTrackingFields() {
@@ -940,34 +893,8 @@
 
       document.addEventListener('DOMContentLoaded', () => {
         populateTrackingFields();
-        observeVturbCtaInjection();
-        syncModalWithHash();
+        observeVturbContentReveal();
       });
-
-      window.addEventListener('hashchange', syncModalWithHash);
-
-      // O CTA é injetado pelo VTurb no light DOM. O listener em captura funciona
-      // mesmo quando o clique nasce dentro dos Web Components do player.
-      document.addEventListener('click', (event) => {
-        const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
-        const anchor = path.find((node) =>
-          node instanceof HTMLAnchorElement &&
-          (node.dataset.modalCta === 'true' || (node.getAttribute('href') || '').includes('#form'))
-        ) || event.target.closest?.('a[href*="#form"], a[data-modal-cta="true"]');
-
-        if (!anchor) return;
-
-        const originalHref = anchor.dataset.originalVturbHref || anchor.getAttribute('href') || '';
-        const vturbSrc = captureVturbTracking(originalHref);
-
-        event.preventDefault();
-        history.replaceState(null, '', `${window.location.pathname}${window.location.search}#form`);
-        openModal('vturb_cta');
-
-        pushEvent('vsl_cta_clicked', {
-          vturb_src: vturbSrc || null
-        });
-      }, true);
 
       closeButton.addEventListener('click', () => closeModal());
 

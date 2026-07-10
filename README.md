@@ -149,6 +149,22 @@ Nome · E-mail · DDD + WhatsApp · É dono do negócio? · Segmento da empresa 
 Faturamento mensal · Consentimento LGPD. Há também campos ocultos de
 rastreamento e um honeypot (`website`).
 
+## Sucesso e redirecionamento ao WhatsApp
+
+Após o webhook responder com sucesso, o formulário é substituído por um painel de
+sucesso dentro do modal, com mensagem informando que um especialista entrará em
+contato. Uma contagem regressiva redireciona automaticamente o usuário para o
+WhatsApp; há também um botão para ir imediatamente.
+
+Configurável no objeto `CONFIG` do `index.html`:
+
+```javascript
+whatsappUrl: 'https://wa.me/5561992194586',
+redirectDelaySeconds: 5
+```
+
+O clique manual no botão cancela a contagem para evitar navegação duplicada.
+
 ## Eventos de rastreamento
 
 Enviados a `window.dataLayer` quando disponível:

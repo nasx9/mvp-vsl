@@ -1,14 +1,45 @@
 # Aula do Método Flywheel — VSL
 
-Landing page estática da **Aula do Método Flywheel**, construída com HTML, CSS e JavaScript puro para publicação via Docker/Nginx no Coolify.
+Landing page estática da **Aula do Método Flywheel**, construída com HTML, CSS e
+JavaScript puro para publicação via Docker/Nginx no Coolify.
 
-A página apresenta o player do VTurb e, no momento configurado do pitch, revela um botão abaixo do vídeo. Ao clicar, o usuário abre um formulário em modal sem sair da página.
+A página apresenta o player do VTurb e, no momento configurado do pitch, revela
+um botão abaixo do vídeo. Ao clicar, o usuário abre um formulário em modal sem
+sair da página. O lead é enviado ao webhook do n8n e a conversão só é registrada
+após resposta de sucesso.
+
+## Padrão de desenvolvimento
+
+Projeto alinhado ao framework [dev-stack](https://github.com/nasx9/dev-stack) e
+ao vault [ai-context](https://github.com/nasx9/ai-context). Maturidade
+**Nível 1 — Simples**: build automatizado no CI, deploy manual controlado no
+Coolify, rollback pela versão anterior. Regras para agentes em `AGENTS.md` /
+`CLAUDE.md`.
+
+## Estrutura
+
+```text
+.
+├── index.html            Página, estilos e scripts da VSL (autocontido)
+├── Dockerfile            Imagem Nginx de produção
+├── nginx.conf            Rotas, cache, headers de segurança e healthcheck
+├── .dockerignore         Contexto de build mínimo
+├── .mise.toml            Ferramentas locais e tasks (serve/build/smoke)
+├── scripts/smoke.sh      Smoke tests automatizados
+├── AGENTS.md             Regras de manutenção por agentes
+├── CLAUDE.md             Ponte de instruções para o Claude Code
+├── .github/workflows/    CI: build da imagem + smoke tests
+└── docs/                 Visão, arquitetura, ambiente, deploy, ADRs, checklists
+```
+
+Comece por `docs/00-visao-geral.md`.
 
 ## Fluxo da página
 
 1. O usuário acessa a página da VSL.
 2. O player do VTurb carrega o vídeo.
-3. No tempo do pitch, o VTurb usa **Mostrar conteúdo oculto** para exibir o elemento com `id="form"`.
+3. No tempo do pitch, o VTurb usa **Mostrar conteúdo oculto** para exibir o
+   elemento com `id="form"`.
 4. O usuário clica em **QUERO FAZER MINHA APLICAÇÃO**.
 5. O formulário é aberto em modal.
 6. Após a validação, os dados são enviados em JSON ao webhook do n8n.
@@ -16,29 +47,28 @@ A página apresenta o player do VTurb e, no momento configurado do pitch, revela
 
 ## Tecnologias
 
-- HTML5
-- CSS3
-- JavaScript puro
-- VTurb SmartPlayer
-- Webhook n8n
-- Google Tag Manager, opcional
-- Meta Pixel, opcional
-- Docker
-- Nginx
-- Coolify
+HTML5 · CSS3 · JavaScript puro · VTurb SmartPlayer · Webhook n8n · Google Tag
+Manager (opcional) · Meta Pixel (opcional) · Docker · Nginx · Coolify.
 
-## Estrutura recomendada
+## Execução local
 
-```text
-.
-├── index.html
-├── Dockerfile
-├── nginx.conf
-├── README.md
-└── AGENTS.md
+Por ser uma página estática, não abra apenas com `file://`. Use um servidor HTTP:
+
+```bash
+mise run serve                 # http://localhost:8080
+# ou:
+python3 -m http.server 8080
+npx --yes serve -l 8080 .
 ```
 
-O arquivo atual pode ser renomeado de `insidesale-vsl.html` para `index.html` antes do deploy.
+Rodar como em produção e validar com smoke tests:
+
+```bash
+mise run build                 # docker build -t mvp-vsl:local .
+mise run smoke                 # build + container + testes de fumaça
+```
+
+Detalhes em `docs/05-ambiente-de-desenvolvimento.md`.
 
 ## Configuração do VTurb
 
@@ -50,9 +80,7 @@ Tipo de seletor: ID
 Valor: form
 ```
 
-Use somente `form`, sem `#`.
-
-O elemento controlado pelo VTurb é:
+Use somente `form`, sem `#`. O elemento controlado pelo VTurb é:
 
 ```html
 <div id="form" class="vturb-hidden-content" style="display: none;">
@@ -62,7 +90,8 @@ O elemento controlado pelo VTurb é:
 </div>
 ```
 
-O VTurb torna esse contêiner visível. O modal só é aberto depois do clique do usuário.
+O VTurb apenas torna o contêiner visível. O modal só abre após o clique do
+usuário.
 
 ## Webhook
 
@@ -72,18 +101,9 @@ O formulário envia os dados para:
 https://n8n.catapultadigital.com.br/webhook/637a9f9a-4f87-4e80-861a-6488d1ed4885
 ```
 
-A URL está definida no objeto `CONFIG` do JavaScript:
-
-```javascript
-const CONFIG = {
-  webhookUrl: 'https://n8n.catapultadigital.com.br/webhook/637a9f9a-4f87-4e80-861a-6488d1ed4885',
-  pageTitle: 'Aula do Método Flywheel',
-  videoId: '6a5012373c43e1aa78fc1dae',
-  funnel: 'vsl-inside-sales'
-};
-```
-
-O webhook deve aceitar `POST` com `Content-Type: application/json` e responder com HTTP `200` ou `201`.
+A URL está definida no objeto `CONFIG` do JavaScript no `index.html`. O webhook
+deve aceitar `POST` com `Content-Type: application/json` e responder com HTTP
+`200` ou `201`.
 
 ### Payload principal
 
@@ -125,159 +145,68 @@ O webhook deve aceitar `POST` com `Content-Type: application/json` e responder c
 
 ## Campos do formulário
 
-- Nome
-- E-mail
-- DDD + WhatsApp
-- É dono do negócio?
-- Segmento da empresa
-- Faturamento mensal
-- Consentimento LGPD
-
-Também existem campos ocultos para rastreamento de mídia e atribuição.
+Nome · E-mail · DDD + WhatsApp · É dono do negócio? · Segmento da empresa ·
+Faturamento mensal · Consentimento LGPD. Há também campos ocultos de
+rastreamento e um honeypot (`website`).
 
 ## Eventos de rastreamento
 
-A página envia eventos para `window.dataLayer` quando disponível:
+Enviados a `window.dataLayer` quando disponível:
 
 ```text
-vsl_pitch_reached
-vsl_cta_revealed
-vsl_cta_clicked
-vsl_form_opened
-vsl_form_started
-vsl_form_validation_error
-vsl_form_submit
-generate_lead
-vsl_form_submit_error
+vsl_pitch_reached · vsl_cta_revealed · vsl_cta_clicked · vsl_form_opened
+vsl_form_started · vsl_form_validation_error · vsl_form_submit
+generate_lead · vsl_form_submit_error
 ```
 
-O evento principal de conversão é:
-
-```text
-generate_lead
-```
-
-Ele só é disparado após o webhook responder com sucesso.
-
-Se `window.fbq` estiver disponível, a página também envia o evento `Lead` para o Meta Pixel usando o mesmo `event_id`, permitindo deduplicação futura com a Conversions API.
+O evento de conversão `generate_lead` só é disparado após o webhook responder
+com sucesso. Se `window.fbq` estiver disponível, o evento `Lead` também é enviado
+ao Meta Pixel com o mesmo `event_id` (deduplicação futura com a Conversions API).
 
 ## Google Tag Manager
 
-O código do GTM está comentado no `<head>` e no início do `<body>`.
-
-Substitua:
-
-```text
-GTM-XXXXXXX
-```
-
-pelo ID real do contêiner e remova os comentários dos dois blocos.
-
-## Execução local
-
-Por ser uma página estática, não abra apenas com `file://` para testar integrações. Utilize um servidor HTTP local.
-
-Com Python:
-
-```bash
-python3 -m http.server 8080
-```
-
-Com Node.js:
-
-```bash
-npx serve .
-```
-
-Acesse:
-
-```text
-http://localhost:8080
-```
+O código do GTM está comentado no `<head>`. Substitua `GTM-XXXXXXX` pelo ID real
+do contêiner e remova os comentários.
 
 ## Docker
 
-Exemplo de `Dockerfile`:
-
-```dockerfile
-FROM nginx:1.27-alpine
-
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY index.html /usr/share/nginx/html/index.html
-
-EXPOSE 80
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget -qO- http://127.0.0.1/health || exit 1
+```bash
+docker build -t mvp-vsl:local .
+docker run -d -p 8080:80 mvp-vsl:local
+# valide: http://localhost:8080  e  http://localhost:8080/health
 ```
 
-Exemplo de `nginx.conf`:
-
-```nginx
-server {
-    listen 80;
-    server_name _;
-
-    root /usr/share/nginx/html;
-    index index.html;
-
-    location = /health {
-        access_log off;
-        add_header Content-Type text/plain;
-        return 200 "ok\n";
-    }
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location ~* \.(?:css|js|jpg|jpeg|png|gif|svg|webp|ico|woff2?)$ {
-        expires 7d;
-        add_header Cache-Control "public, max-age=604800, immutable";
-        try_files $uri =404;
-    }
-}
-```
+A imagem usa `nginx:1.27-alpine`, expõe a porta `80` e define um healthcheck em
+`/health`. A configuração de rotas, cache e headers está em `nginx.conf`.
 
 ## Deploy no Coolify
 
-1. Envie o repositório para GitHub, GitLab ou outro provedor Git suportado.
-2. No Coolify, crie um novo recurso a partir do repositório.
-3. Escolha o build por `Dockerfile`.
-4. Configure a porta exposta como `80`.
-5. Cadastre o domínio da página.
-6. Ative HTTPS.
-7. Faça o deploy.
-8. Verifique o healthcheck em `/health`.
+Passo a passo completo em `docs/deploy/coolify.md`. Resumo:
 
-Caso a URL pública precise permanecer como `/insidesale`, há duas possibilidades:
+1. Crie um recurso *Application* a partir do repositório Git, branch `main`.
+2. Build por `Dockerfile`, porta exposta `80`.
+3. Cadastre o domínio e ative HTTPS.
+4. Configure o health check em `/health` e faça o deploy.
+5. Rode os smoke tests de `docs/deploy/smoke-tests.md` contra o domínio público.
 
-- apontar um domínio ou subdomínio diretamente para esta aplicação; ou
-- manter o proxy principal encaminhando `/insidesale` para este container.
+Rollback: *Redeploy* do commit anterior no Coolify (sem estado, imediato).
 
-## Checklist de produção
+## Checklists
 
-- [ ] Renomear o HTML principal para `index.html`.
-- [ ] Validar o webhook de produção do n8n.
-- [ ] Confirmar CORS e resposta HTTP do webhook.
-- [ ] Configurar `form` no recurso Mostrar conteúdo oculto do VTurb.
-- [ ] Testar a revelação do CTA no tempo correto.
-- [ ] Testar abertura e fechamento do modal.
-- [ ] Testar validações em desktop e celular.
-- [ ] Confirmar captura de UTMs e IDs de anúncios.
-- [ ] Configurar GTM e Pixel, quando aplicável.
-- [ ] Confirmar o evento `generate_lead` após sucesso.
-- [ ] Ativar HTTPS no Coolify.
-- [ ] Validar `/health`.
+- Antes do deploy: `docs/checklists/checklist-pre-deploy.md`
+- Depois do deploy: `docs/checklists/checklist-pos-deploy.md`
 
 ## Segurança
 
 - Não coloque tokens, chaves privadas ou credenciais no HTML.
-- O webhook fica visível no frontend; portanto, o fluxo do n8n deve validar o payload, aplicar rate limit e usar proteção contra spam.
-- Não confie apenas na validação do navegador. Faça validação e normalização novamente no n8n.
-- Preserve o honeypot existente no formulário.
-- Para integrações sensíveis, encaminhe a solicitação por uma API intermediária em vez de expor credenciais no cliente.
+- O webhook fica visível no frontend; o fluxo do n8n deve validar o payload,
+  aplicar rate limit e proteção contra spam.
+- Não confie apenas na validação do navegador; revalide e normalize no n8n.
+- Preserve o honeypot `website` do formulário.
+- Para integrações sensíveis, use uma API intermediária em vez de expor
+  credenciais no cliente.
 
 ## Licença
 
-Projeto privado da IF Development. Uso e distribuição restritos aos responsáveis pelo projeto.
+Projeto privado da IF Development. Uso e distribuição restritos aos responsáveis
+pelo projeto.

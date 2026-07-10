@@ -181,8 +181,10 @@ ao Meta Pixel com o mesmo `event_id` (deduplicação futura com a Conversions AP
 
 ## Google Tag Manager
 
-O código do GTM está comentado no `<head>`. Substitua `GTM-XXXXXXX` pelo ID real
-do contêiner e remova os comentários.
+GTM ativo com o contêiner `GTM-5D9F96N7` (snippet no `<head>` e `noscript` no
+início do `<body>`). Os eventos de conversão são publicados em `window.dataLayer`
+(ver "Eventos de rastreamento"). Para trocar o contêiner, atualize o ID nos dois
+blocos do `index.html`.
 
 ## Docker
 

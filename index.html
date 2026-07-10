@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Plano de Guerra — Inside Sales">
+  <meta name="description" content="Aula do Método Flywheel">
   <meta name="theme-color" content="#070a10">
-  <title>Vinicius Soares | Aula</title>
+  <title>Aula do Método Flywheel</title>
 
   <link rel="preconnect" href="https://scripts.converteai.net" crossorigin>
   <link rel="dns-prefetch" href="https://scripts.converteai.net">
@@ -602,6 +602,7 @@
           <input id="fbclid" name="fbclid" type="hidden" value="">
           <input id="gclid" name="gclid" type="hidden" value="">
           <input id="ttclid" name="ttclid" type="hidden" value="">
+          <input id="src" name="src" type="hidden" value="">
 
           <div class="honeypot" aria-hidden="true">
             <label for="website">Não preencha</label>
@@ -612,7 +613,7 @@
 
           <button id="submit-button" type="submit" class="gpc_botao borda_igual e_formulario">
             <span class="spinner" aria-hidden="true"></span>
-            <span class="button-label">QUERO FALAR COM UM ESPECIALISTA</span>
+            <span class="button-label">ENVIAR MINHA APLICAÇÃO</span>
           </button>
         </fieldset>
       </form>
@@ -631,12 +632,12 @@
       'use strict';
 
       const CONFIG = {
-        // Substitua pela URL real do webhook do n8n.
-        webhookUrl: 'https://SEU-DOMINIO-N8N.com/webhook/vsl-inside-sales',
+        webhookUrl: 'https://n8n.catapultadigital.com.br/webhook/637a9f9a-4f87-4e80-861a-6488d1ed4885',
         requestTimeoutMs: 15000,
         videoId: '6a5012373c43e1aa78fc1dae',
         funnel: 'vsl-inside-sales',
-        pageName: 'inside-sale'
+        pageName: 'aula-metodo-flywheel',
+        pageTitle: 'Aula do Método Flywheel'
       };
 
       const TRACKING_FIELDS = [
@@ -650,7 +651,8 @@
         'utm_term',
         'fbclid',
         'gclid',
-        'ttclid'
+        'ttclid',
+        'src'
       ];
 
       const modal = document.getElementById('form');
@@ -745,7 +747,7 @@
         modal.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('modal-open');
 
-        if (removeHash && window.location.hash === '#form') {
+        if (removeHash && window.location.hash.startsWith('#form')) {
           history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
         }
 
@@ -755,11 +757,77 @@
       }
 
       function syncModalWithHash() {
-        if (window.location.hash === '#form') {
+        if (window.location.hash.startsWith('#form')) {
           openModal('url_hash');
         } else {
           closeModal({ removeHash: false });
         }
+      }
+
+      function captureVturbTracking(href) {
+        if (!href) return '';
+
+        try {
+          const url = new URL(href, window.location.href);
+          const src = url.searchParams.get('src') || '';
+
+          if (src) {
+            sessionStorage.setItem('tracking_src', src);
+            const srcField = document.getElementById('src');
+            if (srcField) srcField.value = src;
+          }
+
+          return src;
+        } catch (error) {
+          console.warn('Não foi possível ler o rastreamento do CTA do VTurb.', error);
+          return '';
+        }
+      }
+
+      function normalizeVturbCta(anchor) {
+        if (!(anchor instanceof HTMLAnchorElement)) return;
+
+        const href = anchor.getAttribute('href') || '';
+        if (!href.includes('#form')) return;
+
+        if (!anchor.dataset.originalVturbHref) {
+          anchor.dataset.originalVturbHref = href;
+        }
+
+        captureVturbTracking(anchor.dataset.originalVturbHref);
+
+        // O VTurb resolve #form para uma URL absoluta e acrescenta ?src=... .
+        // Mantemos o src no formulário, mas fazemos o link navegar somente para o ID.
+        anchor.setAttribute('href', '#form');
+        anchor.setAttribute('target', '_self');
+        anchor.dataset.modalCta = 'true';
+      }
+
+      function normalizeInjectedVturbCtas(root = document) {
+        if (root instanceof HTMLAnchorElement) {
+          normalizeVturbCta(root);
+        }
+
+        root.querySelectorAll?.('a[href*="#form"], a[data-modal-cta="true"]')
+          .forEach(normalizeVturbCta);
+      }
+
+      function observeVturbCtaInjection() {
+        normalizeInjectedVturbCtas(document);
+
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType !== Node.ELEMENT_NODE) return;
+              normalizeInjectedVturbCtas(node);
+            });
+          });
+        });
+
+        observer.observe(document.documentElement, {
+          childList: true,
+          subtree: true
+        });
       }
 
       function populateTrackingFields() {
@@ -812,6 +880,7 @@
 
         return {
           event: 'vsl_lead_generated',
+          page_title: CONFIG.pageTitle,
           event_id: eventId,
           event_time: Math.floor(Date.now() / 1000),
 
@@ -871,10 +940,34 @@
 
       document.addEventListener('DOMContentLoaded', () => {
         populateTrackingFields();
+        observeVturbCtaInjection();
         syncModalWithHash();
       });
 
       window.addEventListener('hashchange', syncModalWithHash);
+
+      // O CTA é injetado pelo VTurb no light DOM. O listener em captura funciona
+      // mesmo quando o clique nasce dentro dos Web Components do player.
+      document.addEventListener('click', (event) => {
+        const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+        const anchor = path.find((node) =>
+          node instanceof HTMLAnchorElement &&
+          (node.dataset.modalCta === 'true' || (node.getAttribute('href') || '').includes('#form'))
+        ) || event.target.closest?.('a[href*="#form"], a[data-modal-cta="true"]');
+
+        if (!anchor) return;
+
+        const originalHref = anchor.dataset.originalVturbHref || anchor.getAttribute('href') || '';
+        const vturbSrc = captureVturbTracking(originalHref);
+
+        event.preventDefault();
+        history.replaceState(null, '', `${window.location.pathname}${window.location.search}#form`);
+        openModal('vturb_cta');
+
+        pushEvent('vsl_cta_clicked', {
+          vturb_src: vturbSrc || null
+        });
+      }, true);
 
       closeButton.addEventListener('click', () => closeModal());
 

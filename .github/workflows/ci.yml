@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-smoke:
+    name: Build da imagem e smoke tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validar HTML (index.html existe e é bem formado o suficiente)
+        run: |
+          test -f index.html
+          grep -q "vturb-smartplayer" index.html
+          grep -q 'id="form"' index.html
+
+      - name: Build da imagem Docker
+        run: docker build -t mvp-vsl:ci .
+
+      - name: Smoke tests
+        env:
+          IMAGE: mvp-vsl:ci
+        run: bash scripts/smoke.sh

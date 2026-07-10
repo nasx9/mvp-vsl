@@ -1,0 +1,16 @@
+# Ambiente padronizado (mise-for-speed). Docker é a fonte de verdade do runtime;
+# aqui só ficam ferramentas de conveniência para desenvolvimento local.
+[tools]
+node = "24"
+
+[tasks.serve]
+description = "Serve a página estática localmente via HTTP (não usar file://)"
+run = "npx --yes serve -l 8080 ."
+
+[tasks.build]
+description = "Builda a imagem Docker de produção"
+run = "docker build -t mvp-vsl:local ."
+
+[tasks.smoke]
+description = "Sobe o container e roda smoke tests de /health e /"
+run = "scripts/smoke.sh"

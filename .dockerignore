@@ -1,0 +1,13 @@
+# Contexto de build mínimo: só entram os arquivos servidos e a config do nginx.
+.git
+.github
+.gitignore
+.dockerignore
+.mise.toml
+.claude
+docs
+README.md
+AGENTS.md
+CLAUDE.md
+agents.md
+**/*.md
